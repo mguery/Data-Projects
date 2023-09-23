@@ -956,4 +956,905 @@ SELECT *,
 (SELECT amount FROM payment LIMIT 1)
 FROM payment
 
+-- correlated subqueries
+/*
+subquery gets evaluated for every single row
+correlated sq doesnt work indepenedently
+
+example
+SELECT first_name, sales FROM employees e1 
+WHERE sales > 
+	(SELECT AVG(sales) FROM employees e2
+	WHERE e1.city = e2.city)
+
+*/
+
+-- where clause 
+select * from payment p1
+where amount = (select max(amount) from payment p2
+							 where p1.customer_id = p2.customer_id)
+order by customer_id
+
+-- challenges
+SELECT title, film_id, replacement_cost, rating
+FROM film f1
+WHERE replacement_cost = (
+	SELECT min(replacement_cost) FROM film f2
+	WHERE f1.rating = f2.rating)
+ORDER BY film_id
+
+SELECT title, film_id, LENGTH,rating
+FROM film f1
+WHERE LENGTH =
+	(SELECT max(LENGTH) FROM film f2
+	WHERE f1.rating = f2.rating)
+
+-- select clause
+select *, (select max(amount) from payment p2
+					where p1.customer_id = p2.customer_id)
+from payment p1 
+order by customer_id
+
+
+
+
+
+
+
+-- DAY 8 ADVANCED: COURSE PROJECT
+-- see course project file
+-- https://github.com/mguery/Data-Projects/blob/main/sql/course-project-challenge.sql
+
+
+
+	
+-- DAY 9 ADVANCED: MANAGING TABLES AND DATABASES
+/*
+data definition - CREATE, ALTER, DROP 
+data manipulation - INSERT, UPDATE, DELETE
+
+data types
+numeric (NT, DECIMAL, SERIAL, SMALLINT, BIGINT
+numeric(precision, scale)
+Precision: total count of digits
+24.99 Scale: count of decimal places 4 digits
+24.99 2 decimal places
+numeric(4,2)
+
+
+strings 
+text, VARCHAR(n)
+
+date/time 
+date(), time(), timestamp(), intervals
+
+other
+boolean, enum (ordered values), array
+
+constraints 
+NOT NULL, UNIQUE (for PK), PRIMARY KEY, DEFAULT, REFERENCES, CHECK - Limit the value range that can be placed in a column
+
+primary and foreign keys
+pk - unique, not null 
+fk - refers to pk in another table
+
+views
+
+*/
+
+CREATE DATABASE database_name;
+DROP DATABASE database_name;
+
+CREATE TABLE staff (
+staff_id SERIAL PRIMARY KEY,
+name VARCHAR(50) NOT NULL
+UNIQUE(name, staff_id)	
+);
+
+
+DROP TABLE table_name; -- dels table
+DROP SCHEMA schema_name -- dels object
+DROP TABLE IF EXISTS table_name;
+
+TRUNCATE table_name -- dels all data in table
+
+INSERT INTO table_name
+VALUES (value1, value2, value3);
+
+INSERT INTO online_sales
+VALUES (1, 245, 13); -- transaction_id, customer_id, film_id
+
+INSERT INTO online_sales
+(customer_id, film_id, amount) -- specific cols
+VALUES (245,13,10.99), (270,12,22.99)
+
+--syntax
+ALTER TABLE table_name
+DROP COLUMN col_name
+DROP COLUMN IF EXISTS col_name
+ADD COLUMN col_name type -- dob DATE
+ADD COLUMN IF EXISTS col_name type
+RENAME COLUMN old_col TO new_col
+ALTER COLUMN col_name TYPE NEW_TYPE
+ALTER COLUMN col_name SET DEFAULT <value>
+ALTER COLUMN <column_name> DROP DEFAULT
+ALTER COLUMN <column_name> SET NOT NULL
+ALTER COLUMN <column_name> DROP NOT NULL
+ADD CONSTRAINT <constraint_name> UNIQUE(column1) 
+
+
+--example
+ALTER TABLE director
+ALTER COLUMN director_account_name SET DEFAULT 3,
+ALTER COLUMN first_name TYPE TEXT,
+ALTER COLUMN last_name TYPE TEXT,
+ADD COLUMN middle_name TEXT,
+ADD CONSTRAINT constraint_1 UNIQUE(account_name)
+
+ALTER TABLE old_table_name
+RENAME new_table_name
+
+
+
+-- CHECK syntax
+CREATE TABLE <table_name> (
+<column_name> TYPE CHECK(condition))
+
+
+-- CHECK examples 
+CREATE TABLE director (
+name TEXT CHECK(length(name)>1)) -- check to see if name > 1, if < 1 theres an error msg that condition is not met
+
+CREATE TABLE director (
+name TEXT CONSTRAINT name_length CHECK (length(name)>1))
+
+CREATE TABLE director (
+name TEXT,
+date_of_birth DATE,
+start_date DATE,
+end_date DATE CHECK(start_date > '01-01-2000'))
+
+ALTER TABLE director
+DROP CONSTRAINT date_check
+
+ALTER TABLE director
+RENAME CONSTRAINT date_check TO data_constraint
+
+
+CREATE TABLE online_sales (
+transaction_id SERIAL PRIMARY KEY,
+customer_id INT REFERENCES customer(customer_id),
+film_id INT REFERENCES film(film_id),
+amount numeric(5,2) NOT NULL,
+promotion_code VARCHAR(10) DEFAULT 'None'	
+);
+
+select * from online_sales
+
+INSERT INTO online_sales (customer_id, film_id, amount, promotion_code)
+VALUES (124, 65, 14.99, 'PROMO2022'), (225,231,12.99,'JULYPROMO'), (119,53,15.99,'SUMMERDEAL');
+
+
+CREATE TABLE director (
+director_id SERIAL PRIMARY KEY, 
+director_acct_name VARCHAR(20) UNIQUE,
+first_name VARCHAR(50),
+last_name VARCHAR(50) DEFAULT 'Not Specified',
+date_of_birth DATE,
+address_id INT REFERENCES address(address_id)
+);
+
+ALTER TABLE director
+ALTER COLUMN director_acct_name TYPE VARCHAR(30),
+ALTER COLUMN last_name DROP DEFAULT,
+ALTER COLUMN last_name SET NOT NULL,
+ADD COLUMN email VARCHAR(40);
+
+select * from director
+
+ALTER TABLE director
+RENAME COLUMN director_acct_name to acct_name
+
+ALTER TABLE director
+RENAME TO directors
+
+CREATE TABLE songs (
+song_id SERIAL PRIMARY KEY, 
+song_name VARCHAR(30) NOT NULL,
+genre VARCHAR(30) DEFAULT 'Not Defined',
+price numeric(4,2) CHECK(price >= 1.99),
+release_date DATE CONSTRAINT date_check CHECK(release_date between '01-01-1950' AND CURRENT_DATE)
+);
+
+select * from songs
+
+
+INSERT INTO songs 
+(song_name, price, release_date)
+VALUES ('SQL Song', 0.99, '2022-01-07')
+
+ALTER TABLE songs
+DROP CONSTRAINT songs_price_check -- table_col_check
+
+ALTER TABLE songs
+ADD CONSTRAINT songs_price_check CHECK(price >= 0.99)
+
+INSERT INTO songs 
+(song_name, price, release_date)
+VALUES ('SQL Song', 0.99, '2022-01-07')
+
+
+-- DAY 10 ADVANCED: VIEWS AND DATA MANIPULATION
+UPDATE table 
+SET col_name = 'value'
+WHERE condition
+
+select customer_id, first_name, last_name
+from customer 
+where customer_id = 1
+
+UPDATE customer 
+SET last_name = 'BROWN'
+WHERE customer_id = 1
+
+
+UPDATE customer 
+SET email = lower(email)
+
+select * from customer
+
+
+select rental_rate from film order by rental_rate
+UPDATE film 
+SET rental_rate = 1.99
+WHERE rental_rate = 0.99
+
+
+select * from customer
+ALTER TABLE customer
+ADD COLUMN initials VARCHAR(4)
+
+UPDATE customer 
+SET initials = left(first_name, 1) || '.' || left(last_name, 1) || '.'
+
+
+-- delete
+DELETE FROM table
+WHERE condition
+
+DELETE FROM songs -- dels all rows
+
+DELETE FROM songs
+WHERE song_id IN (3,4)
+RETURNING song_id -- view deleted rows 
+
+select payment_id from payment WHERE payment_id IN (17064,17067) 
+DELETE FROM payment 
+WHERE payment_id IN (17064,17067)
+RETURNING *
+
+
+-- create table .. as 
+-- physical storage needed, data can change and is not synced to new table (like a snapshot)
+CREATE TABLE table_name
+AS query
+
+CREATE TABLE customer_test
+AS
+SELECT * FROM customer
+
+CREATE TABLE customer_anonymous
+AS
+SELECT customer_id, initials
+FROM customer
+WHERE first_name LIKE 'C%' 
+
+
+CREATE TABLE customer_address
+AS
+SELECT first_name, last_name, email, address, city
+FROM customer c
+LEFT JOIN address a
+ON c.address_id = a.address_id 
+LEFT JOIN city ci
+ON ci.city_id = a.city_id
+
+select * from customer_address
+
+
+CREATE TABLE customer_spendings
+AS
+SELECT 
+first_name || ' ' || last_name as name, 
+SUM(amount) as total_amount
+FROM customer c
+LEFT JOIN payment p
+ON c.customer_id = p.customer_id
+GROUP BY first_name || ' ' || last_name
+
+
+select * from customer_spendings
+
+-- views 
+-- dynamic, for simple queries used frequently
+CREATE VIEW view_name
+AS query
+
+DROP TABLE customer_spendings
+
+CREATE VIEW customer_spendings
+AS
+SELECT 
+first_name || ' ' || last_name as name, 
+SUM(amount) as total_amount
+FROM customer c
+LEFT JOIN payment p
+ON c.customer_id = p.customer_id
+GROUP BY first_name || ' ' || last_name
+
+-- challenge
+
+CREATE VIEW films_category
+AS
+SELECT title, length, name
+FROM film f
+LEFT JOIN film_category fc
+ON f.film_id = fc.film_id
+LEFT JOIN category c
+ON fc.category_id = c.category_id 
+WHERE name in ('Action', 'Comedy')
+ORDER BY length DESC
+
+select * from films_category
+
+-- MATERIALIZED VIEW
+-- data stored physically, but better performance
+CREATE MATERIALIZED VIEW view_name
+AS query
+
+REFRESH MATERIALIZED VIEW view_name
+
+CREATE MATERIALIZED VIEW mv_films_category
+AS
+SELECT title, length, name
+FROM film f
+LEFT JOIN film_category fc
+ON f.film_id = fc.film_id
+LEFT JOIN category c
+ON fc.category_id = c.category_id 
+WHERE name in ('Action', 'Comedy')
+ORDER BY length DESC
+
+UPDATE film 
+SET length = 192 
+WHERE title = 'SATURN NAME'
+
+REFRESH MATERIALIZED VIEW mv_films_category
+select * from mv_films_category
+
+
+-- managing views
+-- ALTER/DROP VIEW, ALTER/DROP MATERIALIZED VIEW, CREATE/REPLACE VIEW
+
+DROP VIEW view_name
+DROP MATERIALIZED VIEW view_name
+
+ALTER VIEW view_name
+RENAME TO v_view_name
+
+ALTER VIEW view_name
+RENAME COLUMN name TO customer_name
+
+CREATE OR REPLACE VIEW v_customer_info -- only for standard views
+AS new_query
+
+
+CREATE VIEW v_customer_info
+AS
+SELECT cu.customer_id,
+    cu.first_name || ' ' || cu.last_name AS name,
+    a.address,
+    a.postal_code,
+    a.phone,
+    city.city,
+    country.country
+     FROM customer cu
+     JOIN address a ON cu.address_id = a.address_id
+     JOIN city ON a.city_id = city.city_id
+     JOIN country ON city.country_id = country.country_id
+ORDER BY customer_id
+
+select * from v_customer_info
+
+ALTER VIEW v_customer_info
+RENAME TO v_customer_information
+
+select * from v_customer_information
+
+
+ALTER VIEW v_customer_information
+RENAME COLUMN customer_id TO c_id
+
+/*
+Add also the initial column as the third column to the view by replacing the view.
+CREATE OR REPLACE VIEW v_customer_information
+AS
+SELECT cu.customer_id,
+    cu.first_name || ' ' || cu.last_name AS name,
+    CONCAT(LEFT(cu.first_name,1),LEFT(cu.last_name,1)) as initials,
+    a.address,
+    a.postal_code,
+    a.phone,
+    city.city,
+    country.country
+     FROM customer cu
+     JOIN address a ON cu.address_id = a.address_id
+     JOIN city ON a.city_id = city.city_id
+     JOIN country ON city.country_id = country.country_id
+ORDER BY customer_id 
+*/
+
+-- import and export
+CREATE TABLE sales (
+transaction_id SERIAL PRIMARY KEY,
+customer_id INT,
+payment_type VARCHAR(20),
+creditcard_no VARCHAR(20),
+cost DECIMAL(5,2),
+quantity INT,
+price DECIMAL(5,2))
+
+/*
+to import - right click sales tables, import/export
+import, choose file, format, encoding - UTF8
+options - select header, delimiter, etc, OK
+
+to export - same as import, add filename, cols tab - select cols 
+*/
+
+
+
+select * from sales
+
+
+-- DAY 11 PRO: WINDOW FUNCS 
+/*
+drill up - high-level or drill down - more detailed
+PARTITION BY clause divides one large window into smaller windows based on single or mult cols. smaller windows referred to as partitions
+
+window func OVER (window specification)
+func() - aggregate funcs, ranking - rank and dense_rank, analytics - lead and lag
+
+over() - defines a window. partition by - divides result into partitions, order by - defines logical order of rows within each group, rows/range - specifies starting and end points of a group
+
+func() OVER (PARTITION BY user_id ORDER BY date)
+
+*/
+
+-- syntax 
+AGG(agg_column) OVER(PARTITION BY partition_column)
+
+
+-- examples
+SELECT 
+transaction_id, payment_type, customer_id, 
+COUNT(*) OVER(PARTITION BY customer_id)
+FROM sales s
+
+-- challenges
+SELECT f.film_id, title, name AS category, length AS length_of_movie, ROUND(avg(LENGTH) OVER (PARTITION BY name), 2) AS avg_length_category
+FROM film f
+LEFT JOIN film_category fc
+ON f.film_id = fc.film_id
+LEFT JOIN category c
+ON fc.category_id = c.category_id
+ORDER BY film_id
+
+
+SELECT *,
+count(*) OVER(PARTITION BY amount, customer_id)
+FROM payment
+ORDER BY customer_id
+
+-- over(order by ...)  - running total (previous values added up)
+-- syntax
+SELECT *,
+	SUM(col) OVER(ORDER BY col) AS total,
+	AVG(col) OVER(ORDER BY col) AS avg,
+	-- ROUND(AVG(amount) OVER(ORDER BY col), 2)
+FROM table
+
+-- examples
+SELECT *, 
+SUM(amount) OVER(ORDER BY payment_date)
+FROM payment
+
+SELECT *, 
+SUM(amount) OVER(PARTITION BY customer_id 
+								 ORDER BY payment_date, payment_id)
+FROM payment
+
+-- challenges
+SELECT flight_id, departure_airport, 
+SUM(actual_arrival - scheduled_arrival) 
+OVER (ORDER BY flight_id) AS length_flight_late 
+FROM flights
+
+SELECT flight_id, departure_airport, 
+SUM(actual_arrival - scheduled_arrival) 
+OVER (PARTITION BY departure_airport 
+			ORDER BY flight_id) AS length_flight_late
+FROM flights
+
+-- rank and dense_rank
+-- syntax
+RANK() OVER (ORDER BY column)
+DENSE_RANK() OVER (ORDER BY column)
+
+-- challenges
+SELECT *
+FROM
+	(SELECT name, country, COUNT(*),
+	RANK() OVER (PARTITION BY country 
+							 ORDER BY COUNT(*) DESC) AS rank
+	FROM customer_list
+	LEFT JOIN payment
+	ON id = customer_id
+	GROUP BY name, country
+	) a
+WHERE rank BETWEEN 1 AND 3
+
+-- first_value
+-- Returns the value of a specified column for the first row in a window frame. LAST_VALUE - last row in frame
+-- syntax 
+FIRST_VALUE(column) OVER (ORDER BY column)
+
+--challenge
+SELECT name, country, COUNT(*),
+FIRST_VALUE(name) OVER (PARTITION BY country ORDER BY COUNT(*)) AS rank
+FROM customer_list
+LEFT JOIN payment
+ON id = customer_id
+GROUP BY name, country
+
+
+-- lead and lag
+-- LEAD = accesses value in next row/value / LAG = previous row/value
+LEAD(column, offset, default_value) OVER (ORDER BY column)
+LAG(column, offset, default_value) OVER (ORDER BY column)
+
+-- examples
+LEAD(sales_quantity) OVER (ORDER BY sales_date) AS next_day_sales
+
+LAG(close, 3) OVER (ORDER BY date) AS three_months_ago_close,
+close - LAG(close, 3) OVER (ORDER BY date) AS difference
+
+
+-- DAY 12 PRO: GROUPING SETS, ROLLUPS, SELF-JOINS
+-- grouping sets 
+/*
+Specifies multiple grouping sets for aggregations in a single query.
+syntax 
+SELECT column1, column2, 
+SUM(value) 
+FROM table 
+GROUP BY 
+	GROUPING SETS ((column1), (column2));
+
+*/
+example
+SELECT 
+	to_char(payment_date, 'Month') AS month, 
+	staff_id, 
+	sum(amount)
+FROM payment
+GROUP BY
+	GROUPING SETS (
+	(staff_id), (month), (staff_id, month))
+
+-- challenge
+SELECT first_name, 
+	last_name, 
+	staff_id, 
+	SUM(amount)
+FROM customer c
+LEFT JOIN payment p ON c.customer_id = p.customer_id
+GROUP BY
+	GROUPING SETS (
+		(first_name, last_name), (first_name, last_name, staff_id))
+ORDER BY first_name
+
+
+-- cube and rollup
+/*
+rollup 
+Generates subtotals and grand totals for a set of columns. 
+
+hierarchies - year, qtr, mo
+GROUP BY
+GROUPING SETS (
+	(column1, column2, column3), -- qtr, mo, day, lowest level
+	(column1, column2), - year and qtr
+	(column1), -- year
+	() -- overall total
+)
+
+SELECT column1, column2, SUM(value) 
+FROM table 
+GROUP BY 
+	ROLLUP (column1, column2);
+*/
+SELECT 'Q'||TO_CHAR(payment_date, 'Q') AS quarter,
+EXTRACT(month FROM payment_date) AS month,
+DATE(payment_date),
+SUM(amount)
+FROM payment
+GROUP BY
+	ROLLUP ('Q'||to_char(payment_date, 'Q'),
+	EXTRACT(month FROM payment_date),
+	DATE(payment_date))
+ORDER BY 1,2,3
+
+--challenge
+SELECT 
+	EXTRACT(quarter FROM book_date) AS quarter,
+	EXTRACT(month FROM book_date) AS month,
+	TO_CHAR(book_date, 'w') as week_in_month,
+	DATE(book_date),
+	SUM(total_amount)
+FROM bookings
+GROUP BY 
+	ROLLUP(1,2,3,4)
+ORDER BY 1,2,3,4
+
+
+/*
+cube 
+Generates all possible combinations of subtotals and grand totals for a set of columns. no hierarchies
+
+SELECT column1, column2, SUM(value) 
+FROM table 
+GROUP BY 
+	CUBE (column1, column2)
+*/
+
+SELECT customer_id, staff_id, date(payment_date), SUM(amount)
+FROM payment 
+GROUP BY 
+	CUBE (customer_id, staff_id, date(payment_date))
+ORDER BY 1,2,3
+
+
+--challenge
+SELECT 
+	p.customer_id, 
+	date(payment_date), 
+	title, 
+	SUM(amount)
+FROM payment p
+LEFT JOIN rental r
+	ON p.rental_id = r.rental_id
+LEFT JOIN inventory i
+	ON r.inventory_id = i.inventory_id
+LEFT JOIN film f
+	ON i.film_id = f.film_id
+GROUP BY 
+	CUBE (p.customer_id, date(payment_date), title)
+ORDER BY 1,2,3
+
+
+-- self join
+/*
+Joins a table with itself to combine rows based on a related column. hierarchies
+
+syntax
+SELECT t1.column1, t2.column1
+FROM table1 t1
+LEFT JOIN table1 t2
+ON t1.column1 = t2.column1
+*/
+-- example
+SELECT emp.employee_id, 
+emp.name AS employee,
+mng.name AS manager
+FROM employee emp
+LEFT JOIN employee mng
+	ON emp.manager_id = mng.employee_id
+
+--challenge
+SELECT f1.title, f2.title, f1.length
+FROM film f1
+LEFT JOIN film f2
+	ON f1.length = f2.length
+WHERE f1.title != f2.title
+ORDER BY length DESC
+
+--cross join 
+/*
+cartesian product, combination of rows
+SELECT * 
+FROM table1 
+CROSS JOIN table2;
+*/
+SELECT staff_id, store.store_id
+FROM staff 
+CROSS JOIN store;
+
+
+--natural join
+/*
+auto joins cols with same col names
+NATURAL LEFT/INNER JOIN
+
+SELECT * 
+FROM table 
+NATURAL LEFT JOIN table2;
+
+*/
+SELECT first_name, last_name
+FROM payment
+NATURAL INNER JOIN customer
+
+
+
+
+-- DAY 13 PRO: COURSE PROJECT
+-- see course project file 
+-- https://github.com/mguery/Data-Projects/blob/main/sql/course-project-challenge.sql
+
+
+
+
+-- DAY 14 PRO: STORED PROCEDURES, TRANSACTIONS
+/* user-defined function
+Custom functions created by users to perform specific tasks
+
+
+CREATE FUNCTION <function_name> (param1, param2,…)
+
+CREATE OR REPLACE FUNCTION <function_name> (param1,
+param2)
+RETURNS return_datatype
+LANGUAGE [plpgsql] [sql]
+AS 
+$$
+DECLARE
+<variable declaration>;
+BEGIN
+<function_definition>;
+END;
+
+$$
+
+*/
+
+CREATE OR REPLACE FUNCTION name_search (f_name VARCHAR(20), l_name VARCHAR(20))
+	RETURNS decimal(6,2)
+	LANGUAGE plpgsql
+AS 
+$$
+DECLARE
+total decimal(6,2);
+BEGIN
+
+	SELECT SUM(amount)
+	INTO total
+	FROM payment
+	NATURAL LEFT JOIN customer
+	WHERE first_name = f_name
+	AND last_name = l_name;
+
+RETURN total;
+END;
+$$
+
+select name_search('MARIA', 'MILLER')
+select name_search('SUSAN', 'WILSON')
+
+
+-- transactions
+/*
+ Groups one or more SQL statements into a single unit of work. changes made are within that session/transaction only. commit finalizes those changes.
+
+BEGIN; / BEGIN WORK; / BEGIN TRANSACTION; 
+OPERATION1;
+COMMIT;
+ 
+*/
+
+--challenge 
+select * from employees order by emp_id
+
+BEGIN;
+
+UPDATE employees
+SET position_title = 'Head of Sales'
+WHERE emp_id = 2;
+UPDATE employees
+SET position_title = 'Head of BI'
+WHERE emp_id = 3;
+UPDATE employees
+SET salary = 12587.00
+WHERE emp_id = 2;
+UPDATE employees
+SET salary = 14614.00
+WHERE emp_id = 3;
+
+COMMIT;
+
+--rollback 
+/*
+undo changes in current transaction, not yet committed
+(reverts to original state)
+*/
+
+--syntax for rollback
+BEGIN;
+OPERATION1;
+OPERATION2;
+ROLLBACK; -- ends transaction
+COMMIT;
+
+-- rollback to savepoint
+BEGIN;
+OPERATION1;
+OPERATION2;
+SAVEPOINT op2;
+OPERATION3;
+SAVEPOINT op3;
+OPERATION4;
+
+ROLLBACK to SAVEPOINT op2; -- does not end transaction
+RELEASE SAVEPOINT op3; -- dels savepoint
+
+COMMIT; -- no rollbacks after committed
+
+
+-- stored procedures
+/*
+can execute transactions unlike user-defined funcs (udfs)
+Precompiled SQL code that can be executed with a single call
+*/
+
+--syntax
+CREATE OR REPLACE PROCEDURE <procedure_name> (param1,
+param2)
+
+CREATE PROCEDURE <procedure_name> (param1, param2,…)
+LANGUAGE plpgsql 
+AS
+$$
+	BEGIN
+	-- comment to what this sp is doing
+	<procedure_definition>
+	COMMIT;
+	END;
+$$
+
+CALL <stored_procedure_name> (param1, param2)
+
+--example 
+CREATE PROCEDURE sp_transfer (tr_amount INT, sender INT,recipient INT)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+-- subtract from sender's balance
+UPDATE acc_balance
+SET amount = amount – tr_amount
+WHERE id = sender;
+
+-- add to recipient's balance
+UPDATE acc_balance
+SET amount = amount – tr_amount
+WHERE id = recipient;
+
+COMMIT;
+END;
+$$
+
+CALL sp_transfer (100, 1,2); -- (tr_amount, sender, recipient)
+
+
+
 
