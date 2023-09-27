@@ -160,3 +160,211 @@ ORDER BY SUM(amount)
 
 
 
+-- FINAL PROJECT - DAY 13
+
+/*
+Task 1
+Difficulty: Moderate
+
+Task 1.1
+In your company there hasn't been a database table with all the employee information yet.
+You need to set up the table called employees in the following way:
+There should be NOT NULL constraints for the following columns:
+first_name,
+last_name ,
+job_position,
+start_date DATE,
+birth_date DATE
+
+Task 1.2
+Set up an additional table called departments in the following way:
+Additionally no column should allow nulls.
+*/
+CREATE TABLE departments (
+	department_id SERIAL PRIMARY KEY,
+	department TEXT NOT NULL,
+	division TEXT NOT NULL
+)
+
+
+/*
+Task 2
+Difficulty: Moderate
+Alter the employees table in the following way:
+- Set the column department_id to not null.
+- Add a default value of CURRENT_DATE to the column start_date.
+- Add the column end_date with an appropriate data type (one that you think makes sense).
+- Add a constraint called birth_check that doesn't allow birth dates that are in the future.
+- Rename the column job_position to position_title.
+*/
+ALTER TABLE employees
+ALTER COLUMN department_id SET NOT NULL,
+ALTER COLUMN start_date SET DEFAULT CURRENT_DATE,
+ADD COLUMN end_date DATE,
+ADD CONSTRAINT birth_check CHECK(birth_date BETWEEN '01-01-1930' AND CURRENT_DATE)
+RENAME job_position TO position_title
+
+
+/*
+Task 3
+Difficulty: Moderate
+
+Task 3.1
+Insert the following values into the employees table.
+There will be most likely an error when you try to insert the values.
+So, try to insert the values and then fix the error.
+Columns: (emp_id,first_name,last_name,position_title,salary,start_date,birth_date,store_id,department_id,manager_id,end_date)
+
+Values:
+(1,'Morrie','Conaboy','CTO',21268.94,'2005-04-30','1983-07-10',1,1,NULL,NULL),
+(2,'Miller','McQuarter','Head of BI',14614.00,'2019-07-23','1978-11-09',1,1,1,NULL),
+(3,'Christalle','McKenny','Head of Sales',12587.00,'1999-02-05','1973-01-09',2,3,1,NULL),
+(4,'Sumner','Seares','SQL Analyst',9515.00,'2006-05-31','1976-08-03',2,1,6,NULL),
+(5,'Romain','Hacard','BI Consultant',7107.00,'2012-09-24','1984-07-14',1,1,6,NULL),
+(6,'Ely','Luscombe','Team Lead Analytics',12564.00,'2002-06-12','1974-08-01',1,1,2,NULL),
+(7,'Clywd','Filyashin','Senior SQL Analyst',10510.00,'2010-04-05','1989-07-23',2,1,2,NULL),
+(8,'Christopher','Blague','SQL Analyst',9428.00,'2007-09-30','1990-12-07',2,2,6,NULL),
+(9,'Roddie','Izen','Software Engineer',4937.00,'2019-03-22','2008-08-30',1,4,6,NULL),
+(10,'Ammamaria','Izhak','Customer Support',2355.00,'2005-03-17','1974-07-27',2,5,3,2013-04-14)
+
+
+Task 3.2
+Insert the following values into the departments table.
+*/
+INSERT INTO employees 
+VALUES
+(1,'Morrie','Conaboy','CTO',21268.94,'2005-04-30','1983-07-10',1,1,NULL,NULL),
+(2,'Miller','McQuarter','Head of BI',14614.00,'2019-07-23','1978-11-09',1,1,1,NULL),
+(3,'Christalle','McKenny','Head of Sales',12587.00,'1999-02-05','1973-01-09',2,3,1,NULL),
+(4,'Sumner','Seares','SQL Analyst',9515.00,'2006-05-31','1976-08-03',2,1,6,NULL),
+(5,'Romain','Hacard','BI Consultant',7107.00,'2012-09-24','1984-07-14',1,1,6,NULL)
+[...]
+
+INSERT INTO departments
+VALUES
+	(1, 'Analytics', 'IT' ),
+	(2, 'Finance', 'Administration' ),
+	(3, 'Sales', 'Sales' ),
+	(4, 'Website', 'IT' ),
+	(5, 'Back Office', 'Administration' )
+
+
+/*
+Task 4
+Difficulty: Moderate
+Task 4.1
+Jack Franklin gets promoted to 'Senior SQL Analyst' and the salary raises to 7200.
+Update the values accordingly.
+
+Task 4.2
+The responsible people decided to rename the position_title Customer Support to Customer Specialist.
+Update the values accordingly.
+
+Task 4.3
+All SQL Analysts including Senior SQL Analysts get a raise of 6%.
+Upate the salaries accordingly.
+
+Task 4.4
+Question: What is the average salary of a SQL Analyst in the company (excluding Senior SQL Analyst)?
+Answer: 8834.75
+*/
+
+
+SELECT * FROM employees WHERE last_name = 'Franklin'
+
+UPDATE employees
+SET salary = 7200
+WHERE emp_id = 25;
+
+UPDATE employees
+SET position_title = 'Senior SQL Analyst'
+WHERE emp_id = 25;
+
+
+UPDATE employees
+SET position_title = 'Customer Specialist'
+WHERE position_title = 'Customer Support'
+
+
+UPDATE employees
+SET salary = salary * 1.06
+WHERE position_title = '%SQL Analyst'
+
+
+SELECT
+	round(avg(salary), 2)
+FROM
+	employees
+WHERE
+	position_title = 'SQL Analyst'
+
+/*
+Task 6
+Difficulty: Moderate
+Write a query that returns the average salaries for each positions with appropriate roundings.
+
+Question: What is the average salary for a Software Engineer in the company.
+Answer: 6028.00
+*/
+SELECT
+	position_title,
+	round(avg(salary), 2)
+FROM 
+    employees
+WHERE 
+    position_title = 'Software Engineer'
+GROUP BY 
+    position_title
+
+
+
+
+/*
+Task 7
+Difficulty: Moderate
+Write a query that returns the average salaries per division.
+
+Question: What is the average salary in the Sales department?
+Answer: 6107.41
+*/
+
+SELECT
+	division,
+	round(avg(salary), 2)
+FROM 
+	employees e
+JOIN 
+	departments d
+ON e.department_id = d.department_id
+GROUP BY division
+
+
+/*
+Task 8
+Difficulty: Advanced
+Task 8.1
+Write a query that returns the following:
+emp_id,
+first_name,
+last_name,
+position_title,
+salary
+
+and a column that returns the average salary for every job_position.
+Order the results by the emp_id.
+
+
+*/
+SELECT 
+	emp_id,
+	first_name,
+	last_name,
+	position_title,
+	salary,
+	round(avg(salary), 2) as avg_salary_position
+FROM 
+	employees
+GROUP BY 
+	emp_id 
+ORDER BY 
+	emp_id
